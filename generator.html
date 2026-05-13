@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ru" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiGen Pro | Ultra Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui'],
+                        mono: ['JetBrains Mono', 'ui-monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --brand-gradient: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.5);
+        }
+
+        .dark {
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            transition: background-color 0.4s ease;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-ultra {
+            background: var(--brand-gradient);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+        }
+
+        .btn-ultra:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -6px rgba(37, 99, 235, 0.4);
+        }
+
+        .custom-range {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .dark .custom-range { background: #334155; }
+
+        .custom-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #2563eb;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        }
+
+        .dark .tab-active {
+            background: #1e293b;
+            color: #60a5fa;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide { animation: slideUp 0.4s ease forwards; }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            transform: scale(0.9) translateY(40px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Support Modal -->
+    <div id="support-modal" class="modal-overlay fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div class="modal-content glass-card w-full max-w-2xl rounded-[3rem] p-8 md:p-12 relative overflow-hidden border-blue-500/20">
+            <div class="absolute top-0 right-0 p-8">
+                <button onclick="toggleSupport()" class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:rotate-90 transition-transform">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-6 mb-10">
+                <div class="w-16 h-16 rounded-[1.5rem] bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/40">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight">Поддержка проекта</h2>
+                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em]">Official Support Center</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Состояние</h4>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                                <span class="text-xs font-bold">Алгоритмы</span>
+                                <span class="flex items-center gap-2 text-[10px] font-black text-emerald-500"><span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> ONLINE</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                                <span class="text-xs font-bold">Безопасность</span>
+                                <span class="text-[10px] font-black text-blue-500 uppercase">Cryptographic</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Связь</h4>
+                        <div class="space-y-2">
+                            <a href="https://t.me/+wazIaVTt58M5ZWIy" target="_blank" class="flex items-center justify-between p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-transparent hover:border-blue-500/40 transition-all group">
+                                <span class="font-bold text-xs">Наш Telegram</span>
+                                <svg class="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-2xl relative overflow-hidden group">
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-600/20 rounded-full blur-3xl group-hover:bg-blue-600/40 transition-colors"></div>
+                        <h4 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-yellow-400 rounded-full"></span> Донат
+                        </h4>
+                        <p class="text-[11px] font-medium leading-relaxed opacity-70 mb-8">Если мои инструменты экономят твое время — ты можешь поддержать разработку копеечкой.</p>
+                        <a href="https://boosty.to/aliglichpc/donate?forPost=11248132" target="_blank" class="block w-full py-4 bg-blue-600 text-white text-center rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/40">
+                            Поддержать через Boosty
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">v1.4.2-ULTRA-STABLE</span>
+                <span class="text-[9px] font-bold text-slate-300">Local Privacy First</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] opacity-0 pointer-events-none transition-all duration-500 translate-y-10">
+        <div class="glass-card px-8 py-4 rounded-3xl flex items-center gap-4 border-blue-500/30">
+            <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
+            <span id="toast-text" class="font-bold text-sm tracking-tight text-blue-600 dark:text-blue-400">Скопировано</span>
+        </div>
+    </div>
+
+    <nav class="max-w-6xl mx-auto px-6 pt-8">
+        <div class="glass-card rounded-[2.5rem] h-24 flex justify-between items-center px-10 border-none bg-white/50 dark:bg-slate-900/50">
+            <div class="flex items-center gap-5">
+                <div class="w-12 h-12 btn-ultra rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div class="hidden sm:block">
+                    <h1 class="text-xl font-black tracking-tight leading-none uppercase italic">MultiGen <span class="text-blue-600 dark:text-blue-400">Ultra</span></h1>
+                    <p class="text-[10px] font-bold tracking-[0.2em] text-slate-400 mt-1 uppercase opacity-70">Secured Generation Suite</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSupport()" class="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-blue-500/30 transition-all">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span class="text-[10px] font-black uppercase tracking-widest opacity-70">Поддержка</span>
+                </button>
+                <button id="theme-toggle" class="w-12 h-12 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                    <svg id="sun-icon" class="w-5 h-5 hidden dark:block text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z"/></svg>
+                    <svg id="moon-icon" class="w-5 h-5 block dark:hidden text-slate-600" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <div class="lg:col-span-7 space-y-10">
+            
+            <!-- Navigation Tabs -->
+            <div class="bg-slate-200/60 dark:bg-slate-900/60 p-1.5 rounded-[2rem] flex flex-wrap gap-1 w-full sm:w-fit">
+                <button class="mode-tab tab-active px-7 py-3 rounded-[1.6rem] text-sm font-bold transition-all" data-mode="password">Пароли</button>
+                <button class="mode-tab px-7 py-3 rounded-[1.6rem] text-sm font-bold transition-all text-slate-500" data-mode="nickname">Никнеймы</button>
+                <button class="mode-tab px-7 py-3 rounded-[1.6rem] text-sm font-bold transition-all text-slate-500" data-mode="name">Имена</button>
+                <button class="mode-tab px-7 py-3 rounded-[1.6rem] text-sm font-bold transition-all text-slate-500" data-mode="gmail">Gmail</button>
+            </div>
+
+            <!-- Display Card -->
+            <section class="glass-card p-10 rounded-[3rem] relative overflow-hidden group">
+                <div class="flex justify-between items-center mb-8">
+                    <div class="flex flex-col gap-2">
+                        <span id="mode-label" class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">PASSWORD GENERATOR</span>
+                        <div class="flex items-center gap-3">
+                            <div id="safety-bars" class="flex gap-1.5">
+                                <div class="w-6 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all duration-500"></div>
+                                <div class="w-6 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all duration-500"></div>
+                                <div class="w-6 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all duration-500"></div>
+                                <div class="w-6 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all duration-500"></div>
+                            </div>
+                            <span id="safety-text" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">---</span>
+                        </div>
+                    </div>
+                    <div id="entropy-tag" class="hidden sm:block text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-500">
+                        0 BITS ENTROPY
+                    </div>
+                </div>
+
+                <div class="relative mb-10">
+                    <div class="bg-white/40 dark:bg-black/20 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 flex items-center justify-between min-h-[140px] shadow-inner transition-all group-hover:bg-white/60 dark:group-hover:bg-black/30">
+                        <div id="main-result" class="text-2xl md:text-4xl font-mono font-bold tracking-tight text-slate-800 dark:text-white break-all leading-tight">
+                            ••••••••••••
+                        </div>
+                        <button onclick="copyCurrent()" class="ml-4 p-5 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:scale-110 active:scale-95 transition-all text-blue-600 border border-slate-100 dark:border-slate-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-5">
+                    <button id="main-gen-btn" class="flex-[3] btn-ultra text-white py-6 rounded-[2rem] font-black text-lg tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20">
+                        ГЕНЕРИРОВАТЬ
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                    <button id="batch-btn" class="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 py-6 rounded-[2rem] font-bold text-sm transition-all hidden">
+                        ПАЧКОЙ
+                    </button>
+                </div>
+            </section>
+
+            <!-- Configuration Section -->
+            <section class="glass-card p-10 rounded-[3rem]">
+                <div id="config-password" class="config-pane space-y-10">
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-end px-2">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-widest leading-none">Длина пароля</h3>
+                            <span id="pwd-len-val" class="text-4xl font-mono font-black text-blue-600 dark:text-blue-400">16</span>
+                        </div>
+                        <input type="range" id="input-len" min="6" max="64" value="16" class="custom-range">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-transparent hover:border-blue-500/20 cursor-pointer flex items-center justify-between transition-all group">
+                            <span class="font-bold text-sm group-hover:text-blue-500 transition-colors">Верхний регистр (A-Z)</span>
+                            <input type="checkbox" id="opt-upper" checked class="w-6 h-6 accent-blue-600">
+                        </label>
+                        <label class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-transparent hover:border-blue-500/20 cursor-pointer flex items-center justify-between transition-all group">
+                            <span class="font-bold text-sm group-hover:text-blue-500 transition-colors">Цифры (0-9)</span>
+                            <input type="checkbox" id="opt-nums" checked class="w-6 h-6 accent-blue-600">
+                        </label>
+                        <label class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-transparent hover:border-blue-500/20 cursor-pointer flex items-center justify-between transition-all group">
+                            <span class="font-bold text-sm group-hover:text-blue-500 transition-colors">Спецсимволы (#$&)</span>
+                            <input type="checkbox" id="opt-syms" checked class="w-6 h-6 accent-blue-600">
+                        </label>
+                        <label class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-transparent hover:border-blue-500/20 cursor-pointer flex items-center justify-between transition-all group">
+                            <span class="font-bold text-sm group-hover:text-blue-500 transition-colors">Читаемость</span>
+                            <input type="checkbox" id="opt-read" class="w-6 h-6 accent-blue-600">
+                        </label>
+                    </div>
+                </div>
+
+                <div id="config-nickname" class="config-pane hidden animate-slide space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Стиль ника</label>
+                            <select id="nick-style" class="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 font-bold border-none ring-1 ring-slate-100 dark:ring-slate-800 outline-none focus:ring-blue-500/50 transition-all">
+                                <option value="cyber">Cyberpunk</option>
+                                <option value="fantasy">Fantasy</option>
+                                <option value="minimal">Minimal</option>
+                                <option value="brutal">Brutal</option>
+                            </select>
+                        </div>
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Сложность</label>
+                            <div class="flex gap-2">
+                                <button class="syl-btn flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-xs transition-all active-syl bg-blue-600 text-white border-blue-600" data-v="2">Short</button>
+                                <button class="syl-btn flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-xs transition-all" data-v="3">Long</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="config-name" class="config-pane hidden animate-slide grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <select id="name-loc" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 font-bold border-none ring-1 ring-slate-100 dark:ring-slate-800 outline-none">
+                        <option value="ru">Русские</option>
+                        <option value="us">English</option>
+                    </select>
+                    <select id="name-gen" class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 font-bold border-none ring-1 ring-slate-100 dark:ring-slate-800 outline-none">
+                        <option value="any">Любой</option>
+                        <option value="male">Мужской</option>
+                        <option value="female">Женский</option>
+                    </select>
+                    <div class="flex items-center gap-3 p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 ring-1 ring-slate-100 dark:ring-slate-800">
+                        <input type="checkbox" id="name-sur" checked class="w-5 h-5 accent-blue-600">
+                        <span class="text-xs font-bold uppercase tracking-tighter">Фамилия</span>
+                    </div>
+                </div>
+
+                <div id="config-gmail" class="config-pane hidden animate-slide space-y-6">
+                    <select id="gmail-tpl" class="w-full p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 font-bold border-none ring-1 ring-slate-100 dark:ring-slate-800 outline-none">
+                        <option value="clean">Имя.Фамилия</option>
+                        <option value="anon">Анонимный хэш</option>
+                    </select>
+                </div>
+            </section>
+        </div>
+
+        <!-- History Sidebar -->
+        <div class="lg:col-span-5 space-y-8">
+            <div class="glass-card p-8 rounded-[3rem] h-[640px] flex flex-col">
+                <div class="flex justify-between items-center mb-8">
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Лог генераций</h4>
+                    <button onclick="clearAll()" class="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline transition-all">Очистить</button>
+                </div>
+                <div id="hist-list" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scroll">
+                    <div class="h-full flex flex-col items-center justify-center opacity-20 grayscale">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-[10px] font-bold uppercase tracking-widest">Пусто</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Support Trigger -->
+            <button onclick="toggleSupport()" class="w-full text-left p-8 rounded-[3.5rem] bg-slate-900 text-white flex items-center gap-6 group overflow-hidden relative shadow-2xl transition-all active:scale-95">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-purple-600/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <h5 class="font-black text-sm tracking-tight mb-1 uppercase italic">Поддержать автора</h5>
+                    <p class="text-[9px] font-bold opacity-50 leading-none uppercase tracking-widest">Boosty & Telegram Channel</p>
+                </div>
+                <div class="ml-auto w-10 h-10 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                </div>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        const DATA = {
+            ru: { 
+                m: { f: ['Арсений', 'Леонид', 'Тимур', 'Константин', 'Руслан', 'Павел', 'Ярослав'], s: ['Беляев', 'Волков', 'Соколов', 'Морозов', 'Новиков', 'Павлов'] },
+                f: { f: ['Мирослава', 'Таисия', 'Валерия', 'Ксения', 'Ульяна', 'Злата', 'Агния'], s: ['Козлова', 'Лебедева', 'Беляева', 'Тихонова', 'Орлова'] }
+            },
+            us: {
+                m: { f: ['Sebastian', 'Theodore', 'Julian', 'Dominic', 'Xavier', 'Silas'], s: ['Walker', 'Young', 'King', 'Wright', 'Lopez', 'Hill'] },
+                f: { f: ['Aurora', 'Hazel', 'Willow', 'Luna', 'Ivy', 'Serenity'], s: ['Green', 'Baker', 'Adams', 'Campbell', 'Stewart'] }
+            },
+            syllables: {
+                cyber: ['v0id', 'core', 'neo', 'jax', 'bit', 'flux', 'net', 'grid', 'synth', 'wire', 'data'],
+                fantasy: ['ael', 'thor', 'val', 'mor', 'fin', 'gal', 'dur', 'wyn', 'thal', 'rim', 'und'],
+                minimal: ['li', 'ta', 'ko', 'en', 'ru', 'ze', 'xi', 'vo', 'mi', 'sa'],
+                brutal: ['krag', 'vash', 'gor', 'rax', 'mort', 'zod', 'brak', 'tusk', 'grim']
+            }
+        };
+
+        const state = {
+            mode: 'password',
+            nickSyl: 2,
+            history: []
+        };
+
+        function toggleSupport() {
+            document.getElementById('support-modal').classList.toggle('active');
+        }
+
+        // --- BG Animation ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        class Particle {
+            constructor() { this.init(); }
+            init() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.s = Math.random() * 2 + 0.5; this.vx = (Math.random() - 0.5) * 0.4; this.vy = (Math.random() - 0.5) * 0.4; this.a = Math.random() * 0.3; }
+            update() { this.x += this.vx; this.y += this.vy; if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.init(); }
+            draw() { ctx.fillStyle = `rgba(37, 99, 235, ${this.a})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2); ctx.fill(); }
+        }
+        function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
+        window.addEventListener('resize', resize);
+        resize();
+        for(let i=0; i<60; i++) particles.push(new Particle());
+        animate();
+
+        // --- Logic ---
+        function secureRandom(max) { const arr = new Uint32Array(1); window.crypto.getRandomValues(arr); return arr[0] % max; }
+        
+        function updateSafetyUI(ent) {
+            const bars = document.querySelectorAll('#safety-bars div');
+            const text = document.getElementById('safety-text');
+            bars.forEach(b => b.className = 'w-6 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all');
+            if (ent < 45) { bars[0].className += ' bg-red-500'; text.textContent = 'Weak'; text.className = 'text-[10px] font-black text-red-500 uppercase tracking-widest'; }
+            else if (ent < 75) { bars[0].className += ' bg-orange-500'; bars[1].className += ' bg-orange-500'; text.textContent = 'Medium'; text.className = 'text-[10px] font-black text-orange-500 uppercase tracking-widest'; }
+            else if (ent < 110) { bars[0].className += ' bg-blue-500'; bars[1].className += ' bg-blue-500'; bars[2].className += ' bg-blue-500'; text.textContent = 'Strong'; text.className = 'text-[10px] font-black text-blue-500 uppercase tracking-widest'; }
+            else { bars.forEach(b => b.className += ' bg-emerald-500'); text.textContent = 'Ultra'; text.className = 'text-[10px] font-black text-emerald-500 uppercase tracking-widest'; }
+        }
+
+        function generate() {
+            let res = "";
+            if(state.mode === 'password') {
+                const len = parseInt(document.getElementById('input-len').value);
+                let char = 'abcdefghijkmnopqrstuvwxyz';
+                if(!document.getElementById('opt-read').checked) char += 'l';
+                if(document.getElementById('opt-upper').checked) char += 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                if(document.getElementById('opt-nums').checked) char += '23456789';
+                if(document.getElementById('opt-syms').checked) char += '!@#$%^&*()_+';
+                for(let i=0; i<len; i++) res += char[secureRandom(char.length)];
+                updateSafetyUI(Math.floor(Math.log2(char.length) * len));
+                document.getElementById('entropy-tag').textContent = `${Math.floor(Math.log2(char.length) * len)} BITS ENTROPY`;
+            } else if(state.mode === 'nickname') {
+                const pool = DATA.syllables[document.getElementById('nick-style').value];
+                for(let i=0; i<state.nickSyl; i++) res += pool[secureRandom(pool.length)];
+                res = res.charAt(0).toUpperCase() + res.slice(1);
+            } else if(state.mode === 'name') {
+                const loc = document.getElementById('name-loc').value;
+                const gen = document.getElementById('name-gen').value === 'any' ? (secureRandom(10) > 5 ? 'm' : 'f') : (document.getElementById('name-gen').value === 'male' ? 'm' : 'f');
+                const pool = DATA[loc === 'ru' ? 'ru' : 'us'][gen];
+                res = pool.f[secureRandom(pool.f.length)] + (document.getElementById('name-sur').checked ? ' ' + pool.s[secureRandom(pool.s.length)] : '');
+            } else if(state.mode === 'gmail') {
+                const t = document.getElementById('gmail-tpl').value;
+                const f = DATA.us.m.f[secureRandom(DATA.us.m.f.length)].toLowerCase();
+                const s = DATA.us.m.s[secureRandom(DATA.us.m.s.length)].toLowerCase();
+                res = t === 'anon' ? `anon.${Math.random().toString(36).slice(2,8)}@gmail.com` : `${f}.${s}${secureRandom(999)}@gmail.com`;
+            }
+            renderResult(res);
+        }
+
+        function renderResult(txt) {
+            const el = document.getElementById('main-result');
+            el.style.opacity = '0';
+            setTimeout(() => {
+                el.textContent = txt;
+                el.style.opacity = '1';
+                state.history.unshift({ val: txt, mode: state.mode });
+                if(state.history.length > 30) state.history.pop();
+                localStorage.setItem('ug_hist', JSON.stringify(state.history));
+                renderHistory();
+            }, 150);
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('hist-list');
+            if(!state.history.length) { list.innerHTML = `<div class="h-full flex flex-col items-center justify-center opacity-10 uppercase text-[10px] font-black">Пусто</div>`; return; }
+            list.innerHTML = state.history.map(i => `
+                <div onclick="copyText('${i.val}')" class="p-4 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-blue-500/40 cursor-pointer transition-all flex items-center justify-between group">
+                    <div class="truncate">
+                        <p class="text-[7px] font-black opacity-30 uppercase">${i.mode}</p>
+                        <p class="font-mono text-xs font-bold truncate">${i.val}</p>
+                    </div>
+                    <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </div>
+            `).join('');
+        }
+
+        function copyText(v) {
+            const t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+            const toast = document.getElementById('toast'); toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            setTimeout(() => toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none'), 1500);
+        }
+
+        function copyCurrent() { const v = document.getElementById('main-result').textContent; if(v !== '••••••••••••') copyText(v); }
+        function clearAll() { state.history = []; localStorage.removeItem('ug_hist'); renderHistory(); }
+
+        // Events
+        document.getElementById('main-gen-btn').onclick = generate;
+        document.querySelectorAll('.mode-tab').forEach(b => b.onclick = () => {
+            document.querySelectorAll('.mode-tab').forEach(x => { x.classList.remove('tab-active'); x.classList.add('text-slate-500'); });
+            b.classList.add('tab-active'); b.classList.remove('text-slate-500');
+            state.mode = b.dataset.mode;
+            document.getElementById('mode-label').textContent = `${state.mode} generator`.toUpperCase();
+            document.querySelectorAll('.config-pane').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`config-${state.mode}`).classList.remove('hidden');
+            const batch = document.getElementById('batch-btn');
+            if(['name', 'gmail'].includes(state.mode)) batch.classList.remove('hidden'); else batch.classList.add('hidden');
+            if(state.mode !== 'password') { document.getElementById('entropy-tag').classList.add('hidden'); document.getElementById('safety-bars').parentElement.classList.add('invisible'); }
+            else { document.getElementById('entropy-tag').classList.remove('hidden'); document.getElementById('safety-bars').parentElement.classList.remove('invisible'); }
+        });
+
+        document.getElementById('input-len').oninput = (e) => document.getElementById('pwd-len-val').textContent = e.target.value;
+        document.querySelectorAll('.syl-btn').forEach(b => b.onclick = () => {
+            document.querySelectorAll('.syl-btn').forEach(x => x.className = 'syl-btn flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 font-bold text-xs transition-all');
+            b.className += ' bg-blue-600 text-white border-blue-600';
+            state.nickSyl = parseInt(b.dataset.v);
+        });
+
+        document.getElementById('theme-toggle').onclick = () => document.documentElement.classList.toggle('dark');
+        document.getElementById('batch-btn').onclick = () => { let l = []; for(let i=0; i<4; i++) { if(state.mode === 'name') l.push(generateName()); else l.push(generateGmail()); } renderResult(l.join(' | ')); };
+
+        const h = localStorage.getItem('ug_hist'); if(h) { state.history = JSON.parse(h); renderHistory(); }
+    </script>
+</body>
+</html>
